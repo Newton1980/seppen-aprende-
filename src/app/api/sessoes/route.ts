@@ -12,7 +12,9 @@ export async function GET(req: NextRequest) {
     include: { _count: { select: { participantes: true } } },
   });
 
-  return NextResponse.json(sessoes);
+  // Excluir campos binários da resposta JSON
+  const sessoesSemBinarios = sessoes.map(({ pdfData: _p, diplomaTemplateData: _d, ebookData: _e, ...rest }) => rest);
+  return NextResponse.json(sessoesSemBinarios);
 }
 
 // POST — criar nova sessão

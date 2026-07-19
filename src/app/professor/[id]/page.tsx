@@ -48,9 +48,9 @@ export default function ProfessorPainel() {
 
   useEffect(() => {
     carregarSessao();
-    // Verificar se já tem PDF
-    fetch(`/uploads/${id}/apresentacao.pdf`, { method: "HEAD" }).then((r) => {
-      if (r.ok) setPdfUrl(`/uploads/${id}/apresentacao.pdf`);
+    // Verificar se já tem PDF (servido via API)
+    fetch(`/api/sessoes/${id}/pdf`, { method: "HEAD" }).then((r) => {
+      if (r.ok) setPdfUrl(`/api/sessoes/${id}/pdf`);
     }).catch(() => {});
     if (!temPusher) {
       const interval = setInterval(carregarSessao, 3000);

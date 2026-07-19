@@ -69,9 +69,9 @@ export default function SessaoAluno() {
   useEffect(() => {
     carregarSessao();
     setNomeParticipante(sessionStorage.getItem("participanteNome") || "");
-    // Verificar se tem PDF
-    fetch(`/uploads/${id}/apresentacao.pdf`, { method: "HEAD" }).then((r) => {
-      if (r.ok) setPdfUrl(`/uploads/${id}/apresentacao.pdf`);
+    // Verificar se tem PDF (servido via API)
+    fetch(`/api/sessoes/${id}/pdf`, { method: "HEAD" }).then((r) => {
+      if (r.ok) setPdfUrl(`/api/sessoes/${id}/pdf`);
     }).catch(() => {});
     if (!temPusher) {
       const interval = setInterval(carregarSessao, 3000);

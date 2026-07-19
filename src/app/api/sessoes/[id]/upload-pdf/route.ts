@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
-// POST — upload de PDF da apresentação
+// POST — upload de PDF da apresentação (armazena no banco)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -16,13 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ erro: "Envie um arquivo PDF válido" }, { status: 400 });
   }
 
-  // Salvar PDF no diretório público
-  const dirPdf = path.join(process.cwd(), "public", "uploads", id);
-  await mkdir(dirPdf, { recursive: true });
-
   const buffer = Buffer.from(await arquivo.arrayBuffer());
-  const caminhoArquivo = path.join(dirPdf, "apresentacao.pdf");
-  await writeFile(caminhoArquivo, buffer);
 
   // Contar páginas do PDF via regex no conteúdo binário
   const totalPaginas = contarPaginasPdf(buffer);
@@ -44,14 +36,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await prisma.slide.createMany({ data: slidesData });
 
+  // Salvar PDF no banco e atualizar sessão
   await prisma.sessao.update({
     where: { id },
-    data: { totalSlides: totalPaginas, slideAtual: 1 },
+    data: { pdfData: buffer, totalSlides: totalPaginas, slideAtual: 1 },
   });
 
   return NextResponse.json({
     totalPaginas,
-    pdfUrl: `/uploads/${id}/apresentacao.pdf`,
+    pdfUrl: `/api/sessoes/${id}/pdf`,
   });
 }
 

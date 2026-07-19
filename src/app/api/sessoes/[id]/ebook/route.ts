@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir, readFile } from "fs/promises";
-import path from "path";
 
-// POST — professor faz upload do ebook
+// POST — professor faz upload do ebook (armazena no banco)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -17,40 +15,38 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ erro: "Envie um arquivo válido" }, { status: 400 });
   }
 
-  // Aceitar PDF e EPUB
   const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
   const allowedExts = ["pdf", "epub"];
   if (!allowedExts.includes(ext)) {
     return NextResponse.json({ erro: "Formato não suportado. Envie PDF ou EPUB." }, { status: 400 });
   }
 
-  // Salvar arquivo
-  const uploadDir = path.join(process.cwd(), "public", "uploads", id);
-  await mkdir(uploadDir, { recursive: true });
-  const filePath = path.join(uploadDir, `ebook.${ext}`);
-
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filePath, buffer);
 
-  const ebookPath = `/uploads/${id}/ebook.${ext}`;
-  await prisma.sessao.update({ where: { id }, data: { ebookPath } });
+  await prisma.sessao.update({
+    where: { id },
+    data: {
+      ebookData: buffer,
+      ebookPath: `ebook.${ext}`,
+      ebookNome: file.name,
+    },
+  });
 
-  return NextResponse.json({ ok: true, path: ebookPath, nome: file.name });
+  return NextResponse.json({ ok: true, path: `ebook.${ext}`, nome: file.name });
 }
 
-// GET — aluno que concluiu baixa o ebook
+// GET — aluno que concluiu baixa o ebook (do banco)
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  // Verificar token do participante
   const token = req.nextUrl.searchParams.get("token");
 
   const sessao = await prisma.sessao.findUnique({
     where: { id },
-    select: { ebookPath: true },
+    select: { ebookData: true, ebookPath: true, ebookNome: true },
   });
 
-  if (!sessao || !sessao.ebookPath) {
+  if (!sessao || !sessao.ebookData) {
     return NextResponse.json({ erro: "Ebook não disponível" }, { status: 404 });
   }
 
@@ -66,28 +62,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  // Ler e retornar o arquivo
-  const filePath = path.join(process.cwd(), "public", sessao.ebookPath);
-  try {
-    const fileBuffer = await readFile(filePath);
-    const ext = sessao.ebookPath.split(".").pop()?.toLowerCase();
-    const contentType = ext === "epub" ? "application/epub+zip" : "application/pdf";
-    const filename = `ebook.${ext}`;
+  const ext = sessao.ebookPath?.split(".").pop()?.toLowerCase() || "pdf";
+  const contentType = ext === "epub" ? "application/epub+zip" : "application/pdf";
+  const filename = sessao.ebookNome || `ebook.${ext}`;
 
-    return new NextResponse(fileBuffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      },
-    });
-  } catch {
-    return NextResponse.json({ erro: "Arquivo não encontrado" }, { status: 404 });
-  }
+  return new NextResponse(sessao.ebookData, {
+    headers: {
+      "Content-Type": contentType,
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
 }
 
 // DELETE — professor remove o ebook
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await prisma.sessao.update({ where: { id }, data: { ebookPath: null } });
+  await prisma.sessao.update({
+    where: { id },
+    data: { ebookPath: null, ebookData: null, ebookNome: null },
+  });
   return NextResponse.json({ ok: true });
 }

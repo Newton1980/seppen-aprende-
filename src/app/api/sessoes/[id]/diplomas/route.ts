@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { readFile } from "fs/promises";
-import path from "path";
 import JSZip from "jszip";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
@@ -21,18 +19,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   });
 
   if (!sessao) return NextResponse.json({ erro: "Sessão não encontrada" }, { status: 404 });
-  if (!sessao.diplomaTemplate) return NextResponse.json({ erro: "Template de diploma não configurado" }, { status: 400 });
+  if (!sessao.diplomaTemplateData) return NextResponse.json({ erro: "Template de diploma não configurado" }, { status: 400 });
   if (sessao.participantes.length === 0) return NextResponse.json({ erro: "Nenhum aluno aprovado" }, { status: 400 });
 
-  // Ler template .docx
-  const templatePath = path.join(process.cwd(), "public", sessao.diplomaTemplate);
-  let templateBytes: Buffer;
-  try {
-    templateBytes = await readFile(templatePath);
-  } catch {
-    return NextResponse.json({ erro: "Arquivo de template não encontrado" }, { status: 404 });
-  }
-
+  const templateBytes = Buffer.from(sessao.diplomaTemplateData);
   const zip = new JSZip();
 
   // Formatar data por extenso
@@ -41,7 +31,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const dataConclusao = `${agora.getDate()} de ${meses[agora.getMonth()]} de ${agora.getFullYear()}`;
 
   const cargaHoraria = sessao.cargaHoraria || 0;
-  const anoAtual = agora.getFullYear();
 
   for (const aluno of sessao.participantes) {
     try {

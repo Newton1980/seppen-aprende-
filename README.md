@@ -424,21 +424,53 @@ Para produção com PostgreSQL, altere `DATABASE_URL` para a connection string d
 
 ## Deploy em Produção
 
-### Vercel (recomendado)
+### Vercel + Neon PostgreSQL (recomendado)
 
-1. Conecte o repositório no Vercel
-2. Configure as variáveis de ambiente no painel do Vercel
-3. Altere o provider do Prisma para `postgresql`
-4. Configure um banco PostgreSQL (Supabase, Neon, Railway, etc.)
-5. Deploy automático a cada push
+O projeto está configurado para deploy serverless na Vercel. Todos os arquivos (PDFs, templates, ebooks) são armazenados no banco de dados como campos binários (`Bytes`), eliminando dependência de filesystem local.
 
-### Docker / VPS
+**Passo 1 — Criar banco PostgreSQL gratuito no Neon:**
+
+1. Acesse [neon.tech](https://neon.tech) e crie uma conta gratuita
+2. Crie um novo projeto (ex: "seppen-aprende")
+3. Copie a **connection string** que será exibida (formato: `postgresql://user:pass@host/dbname?sslmode=require`)
+
+**Passo 2 — Configurar a Vercel:**
+
+1. Acesse [vercel.com](https://vercel.com) e crie uma conta (pode usar o login do GitHub)
+2. Clique em "Add New Project" e importe o repositório do GitHub
+3. Na tela de configuração, adicione as **Environment Variables**:
+
+| Variável | Valor |
+|----------|-------|
+| `DATABASE_URL` | `postgresql://user:pass@host/dbname?sslmode=require` (do Neon) |
+| `PUSHER_APP_ID` | Seu App ID do Pusher |
+| `PUSHER_KEY` | Sua Key do Pusher |
+| `PUSHER_SECRET` | Seu Secret do Pusher |
+| `PUSHER_CLUSTER` | `sa1` |
+| `NEXT_PUBLIC_PUSHER_KEY` | Mesma Key do Pusher |
+| `NEXT_PUBLIC_PUSHER_CLUSTER` | `sa1` |
+
+4. Clique em "Deploy" — a Vercel vai fazer build e publicar automaticamente
+5. Após o deploy, acesse o terminal da Vercel ou rode localmente: `npx prisma db push` com a DATABASE_URL do Neon para criar as tabelas
+
+**Passo 3 — Acessar:**
+
+A Vercel fornece uma URL pública (ex: `seppen-aprende.vercel.app`). Os alunos acessam por essa URL de qualquer dispositivo com internet.
+
+### Execução Local (alternativa)
+
+Para rodar na rede local durante a aula (sem internet):
 
 ```bash
-npm run build
+# No prisma/schema.prisma, troque provider para "sqlite"
+# No .env, use DATABASE_URL="file:./dev.db"
+
+npm install
 npx prisma db push
-npm start
+npx next dev --hostname 0.0.0.0
 ```
+
+Os alunos acessam pelo IP da máquina na rede local (ex: `http://192.168.1.100:3000`).
 
 ---
 
@@ -499,6 +531,15 @@ npm start
 - Efeito frosted glass (backdrop-filter blur) em todos os painéis
 - Painéis semi-transparentes para a foto de fundo aparecer sutilmente
 - Gradiente com foto de fundo na hero section da tela inicial
+
+### v2.0.0 — Deploy Vercel / PostgreSQL (Fase 7)
+- Migração do banco de dados de SQLite para PostgreSQL (compatível com Vercel/Neon)
+- Armazenamento de arquivos (PDF, template de diploma, ebook) no banco como campos `Bytes` em vez de filesystem local
+- Nova API route `GET /api/sessoes/[id]/pdf` para servir PDFs do banco
+- Refatoração de todas as rotas de upload para gravar no banco de dados
+- Exclusão de campos binários das respostas JSON (performance)
+- Configuração de limite de upload de 10MB para serverless
+- Projeto pronto para deploy serverless na Vercel
 
 ---
 

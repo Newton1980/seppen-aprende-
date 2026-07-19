@@ -17,7 +17,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   });
 
   if (!sessao) return NextResponse.json({ erro: "Sessão não encontrada" }, { status: 404 });
-  return NextResponse.json(sessao);
+
+  // Excluir campos binários da resposta JSON (são servidos por rotas dedicadas)
+  const { pdfData: _p, diplomaTemplateData: _d, ebookData: _e, ...sessaoSemBinarios } = sessao;
+  return NextResponse.json(sessaoSemBinarios);
 }
 
 // PATCH — atualizar sessão (avançar slide, encerrar, etc.)
@@ -41,5 +44,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     await emitirEvento(id, "fase-mudou", { faseAtual: sessao.faseAtual });
   }
 
-  return NextResponse.json(sessao);
+  const { pdfData: _p2, diplomaTemplateData: _d2, ebookData: _e2, ...patchSemBinarios } = sessao;
+  return NextResponse.json(patchSemBinarios);
 }
