@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Sessão de capacitação ───
+model Sessao {
+  id            String   @id @default(uuid())
+  titulo        String
+  descricao     String?
+  codigo        String   @unique // código curto para QR/link (ex: "TURMA02")
+  professorNome String
+  professorPin  String   // PIN simples para o professor retomar a sessão
+  modoLogin     String   @default("ambos") // "matricula" | "nome" | "ambos"
+  slideAtual    Int      @default(1)
+  totalSlides   Int      @default(1)
+  ativa         Boolean  @default(true)
+  faseAtual       String   @default("aula") // "aula" | "avaliacao" | "pesquisa" | "concluida"
+  cargaHoraria    Int?     // carga horária em horas (ex: 8, 20, 40)
+  diplomaTemplate String?  // caminho do PDF template de diploma
+  criadaEm        DateTime @default(now())
+  atualizadaEm    DateTime @updatedAt
+
+  participantes Participante[]
+  perguntas     Pergunta[]
+  slides        Slide[]
+}
+
+// ─── Slide da apresentação ───
+model Slide {
+  id        String  @id @default(uuid())
+  sessaoId  String
+  ordem     Int
+  titulo    String
+  subtitulo String?
+  conteudo  String? // HTML ou markdown do conteúdo detalhado
+  modulo    String? // ex: "MÓDULO 02 · PRINCÍPIOS"
+
+  sessao    Sessao     @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  perguntas Pergunta[]
+
+  @@unique([sessaoId, ordem])
+}
+
+// ─── Participante (aluno) ───
+model Participante {
+  id         String   @id @default(uuid())
+  sessaoId   String
+  nome       String
+  matricula  String?  // null se modo "nome"
+  token      String   @unique @default(uuid()) // token de sessão do aluno
+  presente   Boolean  @default(true)
+  nota       Float?   // nota da avaliação final (0-10)
+  aprovado   Boolean? // resultado da avaliação
+  concluiu   Boolean  @default(false) // completou todo o fluxo
+  entradaEm  DateTime @default(now())
+
+  sessao     Sessao              @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  respostas  RespostaParticipante[]
+  avaliacoes AvaliacaoResposta[]
+
+  @@unique([sessaoId, matricula])
+}
+
+// ─── Pergunta (enquete ou questão de conhecimento) ───
+model Pergunta {
+  id        String   @id @default(uuid())
+  sessaoId  String
+  slideId   String?
+  tipo      String   // "enquete" | "conhecimento" | "avaliacao" | "pesquisa"
+  enunciado String
+  aberta    Boolean  @default(false)
+  ordem     Int      @default(0)
+  criadaEm  DateTime @default(now())
+
+  sessao    Sessao              @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  slide     Slide?              @relation(fields: [slideId], references: [id], onDelete: SetNull)
+  opcoes    OpcaoResposta[]
+  respostas RespostaParticipante[]
+}
+
+// ─── Opção de resposta ───
+model OpcaoResposta {
+  id         String  @id @default(uuid())
+  perguntaId String
+  letra      String  // "A", "B", "C", "D"
+  texto      String
+  correta    Boolean @default(false)
+
+  pergunta   Pergunta             @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
+  respostas  RespostaParticipante[]
+}
+
+// ─── Resposta do participante ───
+model RespostaParticipante {
+  id              String   @id @default(uuid())
+  participanteId  String
+  perguntaId      String
+  opcaoId         String
+  respondidaEm    DateTime @default(now())
+
+  participante    Participante  @relation(fields: [participanteId], references: [id], onDelete: Cascade)
+  pergunta        Pergunta      @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
+  opcao           OpcaoResposta @relation(fields: [opcaoId], references: [id], onDelete: Cascade)
+
+  @@unique([participanteId, perguntaId]) // uma resposta por pergunta
+}
+
+// ─── Avaliação final / Pesquisa de satisfação ───
+model AvaliacaoResposta {
+  id             String   @id @default(uuid())
+  participanteId String
+  tipo           String   // "avaliacao_final" | "pesquisa_satisfacao"
+  dados          String   // JSON com as respostas
+  respondidaEm   DateTime @default(now())
+
+  participante   Participante @relation(fields: [participanteId], references: [id], onDelete: Cascade)
+
+  @@unique([participanteId, tipo])
+}
