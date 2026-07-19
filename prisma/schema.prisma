@@ -21,7 +21,8 @@ model Sessao {
   ativa         Boolean  @default(true)
   faseAtual       String   @default("aula") // "aula" | "avaliacao" | "pesquisa" | "concluida"
   cargaHoraria    Int?     // carga horária em horas (ex: 8, 20, 40)
-  diplomaTemplate String?  // caminho do PDF template de diploma
+  diplomaTemplate String?  // caminho do template de diploma (.docx)
+  ebookPath       String?  // caminho do ebook para download pelos alunos
   criadaEm        DateTime @default(now())
   atualizadaEm    DateTime @updatedAt
 

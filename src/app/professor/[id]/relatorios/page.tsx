@@ -7,7 +7,7 @@ type Distribuicao = { letra: string; texto: string; correta: boolean; votos: num
 type Questao = { enunciado: string; tipo: string; totalRespostas: number; acertos: number; percentualAcerto: number; distribuicao: Distribuicao[] };
 type Presenca = { nome: string; matricula: string; entrada: string; presente: boolean; concluiu: boolean };
 type Desempenho = { nome: string; matricula: string; nota: number | null; aprovado: boolean | null; totalRespostas: number };
-type Resumo = { titulo: string; codigo: string; professor: string; criadaEm: string; totalParticipantes: number; totalPerguntas: number; mediaTurma: number | null; aprovados: number; reprovados: number; concluiram: number; diplomaTemplate: string | null; cargaHoraria: number | null };
+type Resumo = { titulo: string; codigo: string; professor: string; criadaEm: string; totalParticipantes: number; totalPerguntas: number; mediaTurma: number | null; aprovados: number; reprovados: number; concluiram: number; diplomaTemplate: string | null; cargaHoraria: number | null; ebookPath: string | null };
 type Relatorio = { resumo: Resumo; presenca: Presenca[]; desempenho: Desempenho[]; questoes: Questao[] };
 
 type AbaAtiva = "resumo" | "presenca" | "desempenho" | "questoes" | "diplomas";
@@ -21,6 +21,9 @@ export default function RelatoriosPage() {
   const [templateEnviado, setTemplateEnviado] = useState(false);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [diplomaMsg, setDiplomaMsg] = useState("");
+  const [ebookEnviado, setEbookEnviado] = useState(false);
+  const [uploadingEbook, setUploadingEbook] = useState(false);
+  const [ebookMsg, setEbookMsg] = useState("");
 
   const carregar = useCallback(async () => {
     const res = await fetch(`/api/sessoes/${id}/relatorios`);
@@ -29,6 +32,7 @@ export default function RelatoriosPage() {
       setDados(data);
       if (data.resumo.diplomaTemplate) setTemplateEnviado(true);
       if (data.resumo.cargaHoraria) setCargaHoraria(String(data.resumo.cargaHoraria));
+      if (data.resumo.ebookPath) setEbookEnviado(true);
     }
   }, [id]);
 
@@ -258,6 +262,58 @@ export default function RelatoriosPage() {
                     {exportando === "diplomas" ? "Gerando diplomas..." : "Gerar todos os diplomas (ZIP)"}
                   </button>
                 </div>
+              </div>
+
+              {/* Seção Ebook */}
+              <div className="rel-questao-card" style={{ marginTop: 24 }}>
+                <h4 className="rel-questao-enunciado" style={{ marginBottom: 16 }}>Material Complementar (Ebook)</h4>
+                <p className="muted-text" style={{ marginBottom: 20, lineHeight: 1.5 }}>
+                  Envie um arquivo <strong>PDF</strong> ou <strong>EPUB</strong> que ficará disponível para download por todos os alunos que concluírem a capacitação.
+                </p>
+
+                <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
+                  <label className="outline-button" style={{ cursor: "pointer", display: "inline-block" }}>
+                    {uploadingEbook ? "Enviando..." : ebookEnviado ? "Trocar ebook" : "Enviar ebook"}
+                    <input
+                      type="file"
+                      accept=".pdf,.epub"
+                      style={{ display: "none" }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingEbook(true);
+                        setEbookMsg("");
+                        const fd = new FormData();
+                        fd.append("ebook", file);
+                        const res = await fetch(`/api/sessoes/${id}/ebook`, { method: "POST", body: fd });
+                        if (res.ok) {
+                          setEbookEnviado(true);
+                          setEbookMsg("Ebook enviado com sucesso!");
+                        } else {
+                          const err = await res.json();
+                          setEbookMsg(err.erro || "Erro ao enviar ebook");
+                        }
+                        setUploadingEbook(false);
+                      }}
+                    />
+                  </label>
+                  {ebookEnviado && <span className="rel-tag-ok">Ebook configurado</span>}
+                  {ebookEnviado && (
+                    <button
+                      className="outline-button"
+                      style={{ color: "#ee744f", borderColor: "#ee744f", fontSize: 12 }}
+                      onClick={async () => {
+                        await fetch(`/api/sessoes/${id}/ebook`, { method: "DELETE" });
+                        setEbookEnviado(false);
+                        setEbookMsg("Ebook removido.");
+                      }}
+                    >
+                      Remover ebook
+                    </button>
+                  )}
+                </div>
+
+                {ebookMsg && <p style={{ fontSize: 12, color: ebookMsg.includes("sucesso") || ebookMsg.includes("Removido") ? "#1ca59a" : "#ee744f" }}>{ebookMsg}</p>}
               </div>
             </div>
           )}

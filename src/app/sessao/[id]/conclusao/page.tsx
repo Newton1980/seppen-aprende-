@@ -16,6 +16,8 @@ export default function ConclusaoPage() {
   const [nomeParticipante, setNomeParticipante] = useState("");
   const [titulo, setTitulo] = useState("");
   const [animado, setAnimado] = useState(false);
+  const [temEbook, setTemEbook] = useState(false);
+  const [baixandoEbook, setBaixandoEbook] = useState(false);
 
   useEffect(() => {
     // Recuperar dados do sessionStorage
@@ -27,8 +29,11 @@ export default function ConclusaoPage() {
       try { setResultado(JSON.parse(resultadoStr)); } catch { /* ok */ }
     }
 
-    // Buscar título da sessão
-    fetch(`/api/sessoes/${id}`).then((r) => r.json()).then((s) => setTitulo(s.titulo)).catch(() => {});
+    // Buscar título da sessão e verificar ebook
+    fetch(`/api/sessoes/${id}`).then((r) => r.json()).then((s) => {
+      setTitulo(s.titulo);
+      if (s.ebookPath) setTemEbook(true);
+    }).catch(() => {});
 
     // Trigger animação
     setTimeout(() => setAnimado(true), 200);
@@ -104,6 +109,37 @@ export default function ConclusaoPage() {
             <div className="conclusao-msg-simples">
               <p>Obrigado por participar desta capacitação.</p>
               <p>Sua presença e suas respostas foram registradas.</p>
+            </div>
+          )}
+
+          {/* Botão de download do ebook */}
+          {temEbook && (
+            <div style={{ margin: "24px 0 8px", textAlign: "center" }}>
+              <button
+                className="primary-button"
+                disabled={baixandoEbook}
+                onClick={async () => {
+                  setBaixandoEbook(true);
+                  const token = sessionStorage.getItem("participanteToken") || "";
+                  const res = await fetch(`/api/sessoes/${id}/ebook?token=${token}`);
+                  if (res.ok) {
+                    const blob = await res.blob();
+                    const disposition = res.headers.get("Content-Disposition") || "";
+                    const match = disposition.match(/filename="(.+)"/);
+                    const filename = match ? match[1] : "ebook.pdf";
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }
+                  setBaixandoEbook(false);
+                }}
+                style={{ fontSize: 15, padding: "12px 32px" }}
+              >
+                {baixandoEbook ? "Baixando..." : "📚 Baixar Material Complementar (Ebook)"}
+              </button>
             </div>
           )}
 

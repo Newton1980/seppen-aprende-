@@ -97,6 +97,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     concluiram: sessao.participantes.filter((p) => p.concluiu).length,
     diplomaTemplate: sessao.diplomaTemplate,
     cargaHoraria: sessao.cargaHoraria,
+    ebookPath: sessao.ebookPath,
   };
 
   return NextResponse.json({ resumo, presenca, desempenho, questoes });
