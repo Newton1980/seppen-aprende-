@@ -111,12 +111,12 @@ export default function SessaoAluno() {
     setEnviando(false);
   }
 
-  if (!sessao) return <div className="app-shell"><header className="topbar"><div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div></header><div className="login-container"><p>Carregando sessão...</p></div></div>;
+  if (!sessao) return <div className="app-shell"><header className="topbar"><div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div></header><div className="login-container"><p>Carregando sessão...</p></div></div>;
 
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+        <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
         <div className="session-state"><span className={sessao.ativa ? "status-dot" : "status-dot muted"} /> {sessao.ativa ? "Sessão ao vivo" : "Sessão encerrada"}</div>
         <button className="avatar" aria-label="Perfil">{nomeParticipante.slice(0, 2).toUpperCase()}</button>
       </header>

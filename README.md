@@ -1,36 +1,479 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SEPPEN Aprende
 
-## Getting Started
+**Sistema de Educação Penitenciária — Plataforma de Capacitação Interativa**
 
-First, run the development server:
+Desenvolvido para a **Secretaria de Estado de Administração Penitenciária do Rio de Janeiro (SEAP-RJ)**, o SEPPEN Aprende é uma plataforma web de capacitação presencial interativa voltada para a formação de policiais penais na **Academia de Administração Penitenciária (ACADEPEN)**.
+
+O sistema permite que um professor conduza uma sessão de treinamento ao vivo com apresentação de slides, enquetes em tempo real, avaliação final, pesquisa de satisfação e emissão de diplomas — tudo em uma interface web acessível por qualquer dispositivo.
+
+---
+
+## Sumário
+
+1. [Visão Geral](#visão-geral)
+2. [Stack Tecnológica](#stack-tecnológica)
+3. [Arquitetura](#arquitetura)
+4. [Estrutura de Arquivos](#estrutura-de-arquivos)
+5. [Modelos de Dados (Prisma)](#modelos-de-dados-prisma)
+6. [API Routes](#api-routes)
+7. [Páginas da Aplicação](#páginas-da-aplicação)
+8. [Funcionalidades](#funcionalidades)
+9. [Formato de Perguntas (.md)](#formato-de-perguntas-md)
+10. [Instalação e Execução](#instalação-e-execução)
+11. [Variáveis de Ambiente](#variáveis-de-ambiente)
+12. [Deploy em Produção](#deploy-em-produção)
+13. [Histórico de Versões](#histórico-de-versões)
+
+---
+
+## Visão Geral
+
+O fluxo completo de uma sessão de capacitação:
+
+1. **Professor cria a sessão** na tela inicial, definindo título, código de acesso, PIN e carga horária
+2. **Alunos acessam** via código ou QR Code pelo celular/computador
+3. **Professor conduz a aula** com slides PDF sincronizados em tempo real para todos os alunos
+4. **Enquetes e perguntas** são disparadas durante a apresentação e os alunos respondem ao vivo
+5. **Avaliação final** com questões de múltipla escolha e cálculo automático de nota
+6. **Pesquisa de satisfação** anônima sobre a qualidade da capacitação
+7. **Tela de conclusão** com resultado individual (nota, aprovação, percentual)
+8. **Relatórios** com dados consolidados, exportação em Excel e PDF
+9. **Diplomas** gerados em lote a partir de template Word (.docx)
+10. **Ebook** disponibilizado para download pelos alunos
+
+---
+
+## Stack Tecnológica
+
+| Camada | Tecnologia | Versão |
+|--------|-----------|--------|
+| Framework | Next.js (App Router) | 16.2.10 |
+| Linguagem | TypeScript | 5.x |
+| UI/CSS | Tailwind CSS + CSS customizado | 4.x |
+| ORM | Prisma | 6.9.x |
+| Banco de Dados (dev) | SQLite | — |
+| Banco de Dados (prod) | PostgreSQL | — |
+| Tempo Real | Pusher Channels (WebSocket) | pusher 5.2 / pusher-js 8.4 |
+| PDF Viewer | pdfjs-dist | 4.10.x |
+| PDF Generation | pdf-lib + PDFKit | 1.17 / 0.19 |
+| Excel Export | ExcelJS | 4.4.x |
+| Diplomas | docxtemplater + PizZip | 3.69 / 3.2 |
+| QR Code | qrcode | 1.5.x |
+| ZIP | JSZip | 3.10.x |
+| Runtime | React | 19.2.4 |
+
+---
+
+## Arquitetura
+
+```
+┌─────────────────────────────────────────────────┐
+│                  NAVEGADOR                       │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
+│  │  Aluno   │  │Professor │  │   Home/Login   │  │
+│  │ (sessao) │  │(professor│  │   (page.tsx)   │  │
+│  │          │  │ /relat.) │  │                │  │
+│  └────┬─────┘  └────┬─────┘  └───────┬───────┘  │
+│       │              │                │          │
+│       └──────┬───────┘                │          │
+│              │ Pusher (WebSocket)     │          │
+│              │ + REST API             │          │
+└──────────────┼────────────────────────┼──────────┘
+               │                        │
+┌──────────────▼────────────────────────▼──────────┐
+│              NEXT.JS SERVER (App Router)          │
+│  ┌────────────────────────────────────────────┐   │
+│  │           API Routes (/api/...)             │   │
+│  │  sessoes · entrar · perguntas · respostas  │   │
+│  │  avaliacoes · relatorios · exportar        │   │
+│  │  diplomas · ebook · qrcode                 │   │
+│  └──────────────────┬─────────────────────────┘   │
+│                     │                             │
+│  ┌──────────────────▼─────────────────────────┐   │
+│  │         Prisma ORM                          │   │
+│  │  SQLite (dev) / PostgreSQL (prod)           │   │
+│  └─────────────────────────────────────────────┘   │
+│                                                    │
+│  ┌─────────────────────────────────────────────┐   │
+│  │  Pusher Server SDK → Broadcast de eventos   │   │
+│  │  • slide-changed   • enquete-aberta         │   │
+│  │  • enquete-resultado • fase-changed         │   │
+│  └─────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────┘
+```
+
+---
+
+## Estrutura de Arquivos
+
+```
+src/
+├── app/
+│   ├── globals.css                    # Estilos globais (todo o CSS da aplicação)
+│   ├── layout.tsx                     # Layout raiz (html, body)
+│   ├── page.tsx                       # Tela inicial (criar/retomar sessão)
+│   ├── entrar/
+│   │   └── [codigo]/page.tsx          # Login do aluno via código da sessão
+│   ├── professor/
+│   │   └── [id]/
+│   │       ├── page.tsx               # Painel do professor (slides, enquetes, controles)
+│   │       └── relatorios/page.tsx    # Relatórios e exportações
+│   ├── sessao/
+│   │   └── [id]/
+│   │       ├── page.tsx               # Visão do aluno (slides + respostas ao vivo)
+│   │       ├── avaliacao/page.tsx     # Avaliação final do aluno
+│   │       ├── pesquisa/page.tsx      # Pesquisa de satisfação
+│   │       └── conclusao/page.tsx     # Tela de conclusão com resultado
+│   └── api/
+│       ├── sessoes/
+│       │   ├── route.ts               # POST criar sessão / GET listar
+│       │   ├── auth/route.ts          # POST autenticar professor (PIN)
+│       │   └── [id]/
+│       │       ├── route.ts           # GET/PATCH dados da sessão
+│       │       ├── qrcode/route.ts    # GET gerar QR Code (PNG)
+│       │       ├── upload-pdf/route.ts       # POST upload de slides PDF
+│       │       ├── upload-perguntas/route.ts # POST upload de perguntas .md
+│       │       ├── relatorios/route.ts       # GET dados consolidados
+│       │       ├── reiniciar-avaliacao/route.ts # POST reiniciar avaliação
+│       │       ├── diploma-template/route.ts    # POST upload template .docx
+│       │       ├── diplomas/route.ts            # GET gerar diplomas ZIP
+│       │       ├── ebook/route.ts               # POST upload / GET download
+│       │       └── exportar/
+│       │           ├── xlsx/route.ts  # GET exportar relatório Excel
+│       │           └── pdf/route.ts   # GET exportar relatório PDF
+│       ├── entrar/route.ts            # POST aluno entrar na sessão
+│       ├── perguntas/
+│       │   ├── route.ts               # POST criar pergunta
+│       │   └── [id]/route.ts          # PATCH abrir/fechar enquete
+│       ├── respostas/route.ts         # POST registrar resposta do aluno
+│       └── avaliacoes/route.ts        # POST enviar avaliação/pesquisa
+├── components/
+│   ├── PdfViewer.tsx                  # Renderizador de PDF com pdfjs-dist
+│   └── ResultadoFullscreen.tsx        # Overlay fullscreen de resultados
+├── lib/
+│   ├── prisma.ts                      # Instância singleton do Prisma Client
+│   ├── pusher-server.ts               # getPusher() — SDK server do Pusher
+│   ├── pusher-client.ts               # getPusherClient() — SDK client do Pusher
+│   ├── parser-perguntas.ts            # Parser de arquivo .md para perguntas
+│   └── qrcode.ts                      # Gerador de QR Code (base64 PNG)
+├── prisma/
+│   └── schema.prisma                  # Schema do banco de dados
+└── public/
+    ├── images/
+    │   ├── brasao-pp-rj.png           # Brasão da Polícia Penal do RJ
+    │   └── fundo-acadepen.jpg         # Foto panorâmica da ACADEPEN
+    ├── exemplo-perguntas.md           # Arquivo modelo de perguntas
+    └── uploads/                       # Arquivos enviados (PDFs, templates)
+```
+
+---
+
+## Modelos de Dados (Prisma)
+
+O schema usa 6 modelos principais:
+
+- **Sessao** — representa uma capacitação com título, código de acesso, PIN do professor, controle de slides, fase atual (`aula` → `avaliacao` → `pesquisa` → `concluida`), carga horária, template de diploma e ebook.
+- **Slide** — slides extraídos do PDF, com ordem, título, subtítulo e módulo.
+- **Participante** — aluno inscrito na sessão, com nome, matrícula, token de sessão, nota e status de aprovação.
+- **Pergunta** — questão vinculada a um slide ou à sessão, com tipo (`enquete`, `conhecimento`, `avaliacao`, `pesquisa`).
+- **OpcaoResposta** — alternativas de cada pergunta, com letra, texto e flag `correta`.
+- **RespostaParticipante** — resposta individual do aluno a uma pergunta específica.
+- **AvaliacaoResposta** — registro consolidado da avaliação final ou pesquisa de satisfação.
+
+---
+
+## API Routes
+
+| Rota | Método | Descrição |
+|------|--------|-----------|
+| `/api/sessoes` | POST | Criar nova sessão de capacitação |
+| `/api/sessoes` | GET | Listar sessões existentes |
+| `/api/sessoes/auth` | POST | Autenticar professor via PIN |
+| `/api/sessoes/[id]` | GET | Obter dados completos da sessão |
+| `/api/sessoes/[id]` | PATCH | Atualizar sessão (slide atual, fase, encerrar) |
+| `/api/sessoes/[id]/qrcode` | GET | Gerar QR Code da sessão (PNG base64) |
+| `/api/sessoes/[id]/upload-pdf` | POST | Upload de apresentação em PDF |
+| `/api/sessoes/[id]/upload-perguntas` | POST | Upload de perguntas em formato .md |
+| `/api/sessoes/[id]/relatorios` | GET | Dados consolidados para relatórios |
+| `/api/sessoes/[id]/reiniciar-avaliacao` | POST | Zerar respostas da avaliação |
+| `/api/sessoes/[id]/diploma-template` | POST | Upload de template de diploma (.docx) |
+| `/api/sessoes/[id]/diplomas` | GET | Gerar diplomas em lote (ZIP com .docx) |
+| `/api/sessoes/[id]/ebook` | POST | Upload de ebook |
+| `/api/sessoes/[id]/ebook` | GET | Download de ebook pelo aluno |
+| `/api/sessoes/[id]/exportar/xlsx` | GET | Exportar relatório em Excel |
+| `/api/sessoes/[id]/exportar/pdf` | GET | Exportar relatório em PDF |
+| `/api/entrar` | POST | Aluno entrar na sessão |
+| `/api/perguntas` | POST | Criar pergunta |
+| `/api/perguntas/[id]` | PATCH | Abrir/fechar enquete (dispara Pusher) |
+| `/api/respostas` | POST | Registrar resposta do aluno |
+| `/api/avaliacoes` | POST | Enviar avaliação final ou pesquisa |
+
+---
+
+## Páginas da Aplicação
+
+| Rota | Usuário | Descrição |
+|------|---------|-----------|
+| `/` | Professor | Tela inicial — criar nova sessão ou retomar existente |
+| `/entrar/[codigo]` | Aluno | Login na sessão via nome e matrícula |
+| `/professor/[id]` | Professor | Painel de controle — slides, enquetes, participantes |
+| `/professor/[id]/relatorios` | Professor | Relatórios, exportações, diplomas e ebook |
+| `/sessao/[id]` | Aluno | Acompanhar sessão ao vivo — slides e respostas |
+| `/sessao/[id]/avaliacao` | Aluno | Avaliação final de múltipla escolha |
+| `/sessao/[id]/pesquisa` | Aluno | Pesquisa de satisfação anônima |
+| `/sessao/[id]/conclusao` | Aluno | Resultado final com nota e status |
+
+---
+
+## Funcionalidades
+
+### Professor
+
+- Criar sessões com código personalizado e PIN de segurança
+- Upload de apresentação em PDF com visualização integrada
+- Upload de perguntas via arquivo Markdown estruturado
+- Navegação de slides sincronizada em tempo real com todos os alunos
+- Disparo e encerramento de enquetes ao vivo com resultado fullscreen
+- Visualização em tempo real de quem está presente
+- Controle de fases: aula → avaliação → pesquisa → conclusão
+- Reinício de avaliação final para permitir nova tentativa
+- Encerrar sessão e criar nova automaticamente
+- Upload de template de diploma (.docx) com variáveis dinâmicas
+- Geração de diplomas em lote (ZIP) com docxtemplater
+- Upload e disponibilização de ebook para download
+- Relatórios com estatísticas consolidadas
+- Exportação em Excel (.xlsx) com dados detalhados
+- Exportação em PDF formatado
+
+### Aluno
+
+- Acesso via código da sessão ou QR Code
+- Login por nome + matrícula ou apenas nome
+- Slides sincronizados em tempo real com o professor
+- Responder enquetes e questões interativas
+- Avaliação final com navegação entre questões
+- Pesquisa de satisfação anônima
+- Tela de conclusão com nota, percentual e status (aprovado/reprovado)
+- Download de material complementar (ebook)
+
+### Tempo Real (Pusher)
+
+Eventos WebSocket transmitidos pelo Pusher Channels:
+
+- `slide-changed` — professor avança/retrocede slide
+- `enquete-aberta` — professor abre enquete para votação
+- `enquete-resultado` — resultados consolidados de uma enquete
+- `fase-changed` — transição entre fases da sessão
+
+### Efeitos Visuais
+
+- Efeito holográfico (sweep teal gradient) nos cards e botões ao hover
+- Background com foto da ACADEPEN em toda a aplicação (efeito frosted glass)
+- Brasão da Polícia Penal do RJ no topbar e na tela inicial
+- Animações CSS de entrada na tela de conclusão (fade-in + translate)
+- Resultado fullscreen com animação de expansão para enquetes
+- Transições suaves em todos os elementos interativos
+- Design responsivo completo para mobile, tablet e desktop
+
+---
+
+## Formato de Perguntas (.md)
+
+As perguntas são importadas via arquivo Markdown com a seguinte estrutura:
+
+```markdown
+# enquete
+
+## Texto da pergunta de enquete?
+slide: 3
+- [ ] Alternativa A
+- [x] Alternativa correta
+- [ ] Alternativa C
+- [ ] Alternativa D
+
+# conhecimento
+
+## Texto da pergunta de conhecimento?
+slide: 5
+- [ ] Alternativa A
+- [x] Alternativa correta
+- [ ] Alternativa C
+- [ ] Alternativa D
+
+# avaliacao
+
+## Texto da questão da avaliação final?
+- [x] Alternativa correta
+- [ ] Alternativa B
+- [ ] Alternativa C
+- [ ] Alternativa D
+
+# pesquisa
+
+## Como você avalia esta capacitação?
+- [ ] Excelente
+- [ ] Boa
+- [ ] Regular
+- [ ] Precisa melhorar
+```
+
+Tipos disponíveis: `enquete`, `conhecimento`, `avaliacao`, `pesquisa`. Use `[x]` para marcar a alternativa correta (obrigatório em `conhecimento` e `avaliacao`; irrelevante em `pesquisa`). O campo `slide: N` é opcional e vincula a pergunta a um slide específico.
+
+---
+
+## Instalação e Execução
+
+### Pré-requisitos
+
+- Node.js 18+
+- npm ou yarn
+
+### Instalação
+
+```bash
+git clone <url-do-repositorio>
+cd apresentacao-interativa
+
+# Instalar dependências
+npm install
+
+# Gerar o Prisma Client
+npx prisma generate
+
+# Criar o banco de dados (SQLite em dev)
+npx prisma db push
+```
+
+### Configurar variáveis de ambiente
+
+Criar arquivo `.env` na raiz do projeto (ver seção abaixo).
+
+### Executar em desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse em `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build para produção
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Variáveis de Ambiente
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Criar arquivo `.env` na raiz:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+# Banco de dados
+DATABASE_URL="file:./dev.db"
 
-## Deploy on Vercel
+# Pusher (tempo real via WebSocket)
+PUSHER_APP_ID="seu_app_id"
+PUSHER_KEY="sua_key"
+PUSHER_SECRET="seu_secret"
+PUSHER_CLUSTER="sa1"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Pusher client (prefixo NEXT_PUBLIC_ para acesso no browser)
+NEXT_PUBLIC_PUSHER_KEY="sua_key"
+NEXT_PUBLIC_PUSHER_CLUSTER="sa1"
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Para produção com PostgreSQL, altere `DATABASE_URL` para a connection string do PostgreSQL e ajuste o `provider` no `prisma/schema.prisma` de `sqlite` para `postgresql`.
+
+---
+
+## Deploy em Produção
+
+### Vercel (recomendado)
+
+1. Conecte o repositório no Vercel
+2. Configure as variáveis de ambiente no painel do Vercel
+3. Altere o provider do Prisma para `postgresql`
+4. Configure um banco PostgreSQL (Supabase, Neon, Railway, etc.)
+5. Deploy automático a cada push
+
+### Docker / VPS
+
+```bash
+npm run build
+npx prisma db push
+npm start
+```
+
+---
+
+## Histórico de Versões
+
+### v1.0.0 — Fundação (Fase 1)
+- Estrutura do projeto Next.js 16 com App Router e TypeScript
+- Schema Prisma com modelos Sessao, Participante, Pergunta, OpcaoResposta, RespostaParticipante
+- API Routes para CRUD de sessões, entrada de alunos, perguntas e respostas
+- Tela inicial para criar/retomar sessão com código e PIN
+- Tela de login do aluno via código da sessão
+- Painel do professor com navegação de slides
+- Visão do aluno com slides sincronizados
+
+### v1.1.0 — Tempo Real (Fase 2)
+- Integração com Pusher Channels para WebSocket
+- Sincronização de slides em tempo real (professor → alunos)
+- Enquetes ao vivo com disparo e encerramento
+- Notificação em tempo real de novas enquetes para alunos
+- Remoção de polling — tudo via WebSocket
+
+### v1.2.0 — Conteúdo e Avaliação (Fase 3)
+- Upload e renderização de apresentação PDF (pdfjs-dist)
+- Parser de perguntas em formato Markdown (.md)
+- Componente PdfViewer com navegação integrada
+- Modo tela cheia para apresentação
+- Componente ResultadoFullscreen com efeitos visuais para enquetes
+- Avaliação final com questões de múltipla escolha e navegação entre questões
+- Pesquisa de satisfação anônima
+- API de avaliação com cálculo automático de nota (0-10)
+- Tela de conclusão do aluno com nota, percentual e status
+
+### v1.3.0 — Relatórios e Diplomas (Fase 4)
+- API de relatórios com dados consolidados (estatísticas por pergunta, por aluno)
+- Página de relatórios do professor com visualização completa
+- Exportação em Excel (.xlsx) com ExcelJS
+- Exportação em PDF formatado com PDFKit
+- Schema atualizado para suportar diplomas (template, carga horária)
+- Upload de template de diploma (.docx) com variáveis: `{nome}`, `{matricula}`, `{titulo}`, `{data}`, `{cargaHoraria}`, `{nota}`
+- Geração de diplomas em lote usando docxtemplater + PizZip (ZIP com .docx)
+- Upload e download de ebook (material complementar)
+- Controles do professor para transição de fases (aula → avaliação → pesquisa)
+- Reinício de avaliação final pelo professor
+- Opção de criar novo curso ao encerrar sessão
+
+### v1.4.0 — Responsividade e Polish (Fase 5)
+- Responsividade mobile completa (breakpoints 900px, 700px, 480px)
+- Layout adaptativo para sidebar, grids, painéis e formulários
+- Polimento da tela inicial e branding institucional SEPPEN
+- Melhorias no painel do professor (ícones, layout, status)
+- Animações e micro-interações CSS (transições suaves, hovers, focus)
+
+### v1.5.0 — Identidade Visual SEAP-RJ (Fase 6)
+- Efeito holográfico (sweep teal gradient) em cards, botões e opções de resposta
+- Inserção do brasão da Polícia Penal do RJ no topbar de todas as páginas
+- Brasão na tela inicial como logo principal
+- Foto panorâmica da ACADEPEN como background de toda a aplicação
+- Efeito frosted glass (backdrop-filter blur) em todos os painéis
+- Painéis semi-transparentes para a foto de fundo aparecer sutilmente
+- Gradiente com foto de fundo na hero section da tela inicial
+
+---
+
+## Licença
+
+Uso interno — Secretaria de Estado de Administração Penitenciária do Rio de Janeiro (SEAP-RJ).
+
+---
+
+## Créditos
+
+Desenvolvido para o **SEPPEN — Subsecretaria de Ensino, Pesquisa e Perícia** da SEAP-RJ, para uso na **ACADEPEN — Academia de Administração Penitenciária**.

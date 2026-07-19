@@ -46,7 +46,7 @@ export default function ConclusaoPage() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+        <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
       </header>
 
       <div className="conclusao-container">

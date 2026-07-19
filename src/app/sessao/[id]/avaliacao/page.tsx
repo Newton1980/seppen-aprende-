@@ -91,7 +91,7 @@ export default function AvaliacaoPage() {
     return (
       <div className="app-shell">
         <header className="topbar">
-          <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+          <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
         </header>
         <div className="login-container"><p>Carregando avaliação...</p></div>
       </div>
@@ -101,7 +101,7 @@ export default function AvaliacaoPage() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+        <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
         <div className="session-state"><span className="status-dot" /> Avaliação em andamento</div>
       </header>
 

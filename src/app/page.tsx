@@ -79,7 +79,7 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+        <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão Polícia Penal RJ" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
         <div className="session-state">
           <span style={{ fontSize: 11, opacity: .7 }}>Sistema de Educação Penitenciária</span>
         </div>
@@ -88,7 +88,7 @@ export default function Home() {
       <div className="home-hero">
         {modo === "inicio" && (
           <div className="login-card" style={{ textAlign: "center" }}>
-            <div className="home-logo">S</div>
+            <img src="/images/brasao-pp-rj.png" alt="Brasão Polícia Penal RJ" className="home-logo" />
             <span className="home-badge">PLATAFORMA DE CAPACITAÇÃO INTERATIVA</span>
             <h1 style={{ fontSize: 26, margin: "8px 0 4px", letterSpacing: "-.5px" }}>SEPPEN Aprende</h1>
             <p className="home-subtitle" style={{ margin: "8px auto 0" }}>
@@ -106,6 +106,7 @@ export default function Home() {
                 Entrar como aluno
               </button>
             </div>
+
           </div>
         )}
 

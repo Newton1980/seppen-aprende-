@@ -150,7 +150,7 @@ export default function ProfessorPainel() {
     if (res.ok) setResultado(await res.json());
   }
 
-  if (!sessao) return <div className="app-shell"><header className="topbar"><div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div></header><div className="login-container"><p>Carregando painel...</p></div></div>;
+  if (!sessao) return <div className="app-shell"><header className="topbar"><div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div></header><div className="login-container"><p>Carregando painel...</p></div></div>;
 
   const slideAtual = sessao.slides?.find((s) => s.ordem === sessao.slideAtual);
   const perguntaAtiva = sessao.perguntas?.find((p) => p.aberta);
@@ -160,7 +160,7 @@ export default function ProfessorPainel() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+        <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
         <div className="session-state"><span className={sessao.ativa ? "status-dot" : "status-dot muted"} /> {sessao.ativa ? "Sessão ao vivo" : "Sessão encerrada"}</div>
         <button className="avatar" aria-label="Professor">PR</button>
       </header>

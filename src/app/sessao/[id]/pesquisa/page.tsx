@@ -77,7 +77,7 @@ export default function PesquisaPage() {
     return (
       <div className="app-shell">
         <header className="topbar">
-          <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+          <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
         </header>
         <div className="login-container"><p>Carregando pesquisa...</p></div>
       </div>
@@ -87,7 +87,7 @@ export default function PesquisaPage() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">S</span><span>SEPPEN <b>Aprende</b></span></div>
+        <div className="brand"><img src="/images/brasao-pp-rj.png" alt="Brasão" className="brand-mark" /><span>SEPPEN <b>Aprende</b></span></div>
         <div className="session-state"><span className="status-dot" /> Pesquisa de satisfação</div>
       </header>
 
