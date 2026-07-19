@@ -180,7 +180,7 @@ export default function RelatoriosPage() {
               <div className="rel-questao-card">
                 <h4 className="rel-questao-enunciado" style={{ marginBottom: 16 }}>Geração de Diplomas em Lote</h4>
                 <p className="muted-text" style={{ marginBottom: 20, lineHeight: 1.5 }}>
-                  Envie o PDF modelo do certificado. O sistema usa esse PDF como fundo e sobrescreve automaticamente o <strong>nome do aluno</strong>, o <strong>texto descritivo</strong> e a <strong>data de conclusão</strong> para cada aluno aprovado.
+                  Envie o arquivo <strong>.docx</strong> modelo do certificado com os placeholders: <code>{"{Nome}"}</code>, <code>{"{id funcional}"}</code>, <code>{"{CURSO}"}</code>, <code>{"{CARGA-HORARIA}"}</code> e <code>{"{DATA}"}</code>. O sistema substitui automaticamente os dados de cada aluno aprovado.
                 </p>
 
                 {/* Carga horária */}
@@ -198,10 +198,10 @@ export default function RelatoriosPage() {
                 {/* Upload template */}
                 <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
                   <label className="outline-button" style={{ cursor: "pointer", display: "inline-block" }}>
-                    {uploadingTemplate ? "Enviando..." : templateEnviado ? "Trocar template" : "Enviar template PDF"}
+                    {uploadingTemplate ? "Enviando..." : templateEnviado ? "Trocar template" : "Enviar template (.docx)"}
                     <input
                       type="file"
-                      accept=".pdf"
+                      accept=".docx,.pdf"
                       style={{ display: "none" }}
                       onChange={async (e) => {
                         const file = e.target.files?.[0];

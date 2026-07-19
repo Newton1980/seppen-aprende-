@@ -227,16 +227,52 @@ export default function ProfessorPainel() {
               </button>
             )}
             {sessao.faseAtual === "avaliacao" && (
-              <button className="primary-button wide" style={{ marginTop: 8 }}
-                onClick={() => atualizarSessao({ faseAtual: "pesquisa" })}>
-                Liberar pesquisa de satisfação
-              </button>
+              <>
+                <button className="primary-button wide" style={{ marginTop: 8 }}
+                  onClick={() => atualizarSessao({ faseAtual: "pesquisa" })}>
+                  Liberar pesquisa de satisfação
+                </button>
+                <button className="outline-button wide" style={{ marginTop: 4, fontSize: 11, color: "#ee744f", borderColor: "#ee744f" }}
+                  onClick={async () => {
+                    if (!confirm("Reiniciar avaliação? Todas as respostas e notas dos alunos serão apagadas.")) return;
+                    await fetch(`/api/sessoes/${id}/reiniciar-avaliacao`, { method: "POST" });
+                    carregarSessao();
+                  }}>
+                  Reiniciar avaliação
+                </button>
+              </>
             )}
             {sessao.faseAtual === "pesquisa" && (
-              <button className="danger-button" style={{ marginTop: 8 }}
-                onClick={() => atualizarSessao({ faseAtual: "concluida", ativa: false })}>
-                Encerrar capacitação
-              </button>
+              <>
+                <button className="danger-button" style={{ marginTop: 8 }}
+                  onClick={() => atualizarSessao({ faseAtual: "concluida", ativa: false })}>
+                  Encerrar capacitação
+                </button>
+                <button className="outline-button wide" style={{ marginTop: 4, fontSize: 11, color: "#ee744f", borderColor: "#ee744f" }}
+                  onClick={async () => {
+                    if (!confirm("Reiniciar avaliação? Todas as respostas e notas dos alunos serão apagadas e eles voltarão para a avaliação.")) return;
+                    await fetch(`/api/sessoes/${id}/reiniciar-avaliacao`, { method: "POST" });
+                    carregarSessao();
+                  }}>
+                  Reiniciar avaliação
+                </button>
+              </>
+            )}
+            {sessao.faseAtual === "concluida" && (
+              <>
+                <button className="primary-button wide" style={{ marginTop: 8, background: "#1ca59a" }}
+                  onClick={() => window.location.href = "/"}>
+                  Criar nova capacitação
+                </button>
+                <button className="outline-button wide" style={{ marginTop: 4, fontSize: 11, color: "#ee744f", borderColor: "#ee744f" }}
+                  onClick={async () => {
+                    if (!confirm("Reiniciar avaliação? Todas as respostas e notas serão apagadas e os alunos farão novamente.")) return;
+                    await fetch(`/api/sessoes/${id}/reiniciar-avaliacao`, { method: "POST" });
+                    carregarSessao();
+                  }}>
+                  Reiniciar avaliação
+                </button>
+              </>
             )}
           </div>
         </aside>
