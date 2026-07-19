@@ -230,6 +230,7 @@ O schema usa 6 modelos principais:
 ### Professor
 
 - Criar sessões com código personalizado e PIN de segurança
+- Retomar sessão existente a partir de qualquer dispositivo (código + PIN)
 - Upload de apresentação em PDF com visualização integrada
 - Upload de perguntas via arquivo Markdown estruturado
 - Navegação de slides sincronizada em tempo real com todos os alunos
@@ -265,15 +266,48 @@ Eventos WebSocket transmitidos pelo Pusher Channels:
 - `enquete-resultado` — resultados consolidados de uma enquete
 - `fase-changed` — transição entre fases da sessão
 
+### Autenticação e Retomar Sessão
+
+O sistema possui um mecanismo de autenticação simples por código + PIN para o professor:
+
+- Ao criar uma sessão, o professor define um **código** (gerado automaticamente ou personalizado) e um **PIN numérico**
+- O código é compartilhado com os alunos para que acessem a sessão
+- O PIN é usado exclusivamente pelo professor para **retomar uma sessão existente** após fechar o navegador ou trocar de dispositivo
+- O botão "Retomar sessão existente" na tela inicial abre um formulário que valida código + PIN via `POST /api/sessoes/auth`
+- Se os dados forem válidos, o professor é redirecionado ao painel de controle da sessão com todos os dados preservados (slides, participantes, respostas, fase atual)
+- Se inválidos, exibe mensagem de erro sem revelar se o código existe ou não
+
 ### Efeitos Visuais
 
-- Efeito holográfico (sweep teal gradient) nos cards e botões ao hover
-- Background com foto da ACADEPEN em toda a aplicação (efeito frosted glass)
-- Brasão da Polícia Penal do RJ no topbar e na tela inicial
+**Efeito holográfico (sweep teal gradient no hover)** — aplicado nos seguintes elementos:
+
+| Elemento | Escopo | Descrição |
+|----------|--------|-----------|
+| `.primary-button` | Professor e Aluno | Todos os botões primários (criar, enviar, próximo, etc.) |
+| `.answer` | Aluno | Opções de resposta em enquetes e avaliação |
+| `.presentation-panel` | Professor e Aluno | Painel de slides/apresentação |
+| `.live-panel` | Professor | Painel de enquete ao vivo |
+| `.answer-panel` | Professor e Aluno | Painel de respostas |
+| `.login-card` | Todos | Cards da tela inicial e login |
+| `.aval-card` | Aluno | Card da avaliação final |
+| `.conclusao-card` | Aluno | Card da tela de conclusão |
+| `.rel-card-stat` | Professor | Cards de estatísticas nos relatórios |
+| `.rel-questao-card` | Professor | Cards de questões nos relatórios |
+| `.bottom-cards article` | Professor | Cards de resumo (participantes, perguntas, etc.) |
+| `.notice-card` | Professor | Card de avisos na sidebar |
+
+Botões secundários (`.outline-button`, `.danger-button`, botões de navegação de slides) não possuem o efeito holográfico por design — são elementos de ação secundária.
+
+**Outros efeitos visuais:**
+
+- Background com foto da ACADEPEN em toda a aplicação (efeito frosted glass com `backdrop-filter: blur`)
+- Todos os painéis usam `rgba(255,255,255,.88)` com blur para transparência sutil
+- Brasão da Polícia Penal do RJ no topbar de todas as páginas e como logo na tela inicial
 - Animações CSS de entrada na tela de conclusão (fade-in + translate)
 - Resultado fullscreen com animação de expansão para enquetes
-- Transições suaves em todos os elementos interativos
-- Design responsivo completo para mobile, tablet e desktop
+- Glow sutil nos cards de relatório e estatísticas ao hover
+- Transições suaves em todos os elementos interativos (box-shadow, transform, border-color)
+- Design responsivo completo para mobile, tablet e desktop (breakpoints: 900px, 700px, 480px)
 
 ---
 
