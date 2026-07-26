@@ -14,7 +14,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ erro: "PDF não encontrado" }, { status: 404 });
   }
 
-  return new NextResponse(sessao.pdfData, {
+  return new NextResponse(new Uint8Array(sessao.pdfData), {
     headers: {
       "Content-Type": "application/pdf",
       "Cache-Control": "public, max-age=3600",

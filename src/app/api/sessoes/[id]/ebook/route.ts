@@ -66,7 +66,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const contentType = ext === "epub" ? "application/epub+zip" : "application/pdf";
   const filename = sessao.ebookNome || `ebook.${ext}`;
 
-  return new NextResponse(sessao.ebookData, {
+  return new NextResponse(new Uint8Array(sessao.ebookData), {
     headers: {
       "Content-Type": contentType,
       "Content-Disposition": `attachment; filename="${filename}"`,

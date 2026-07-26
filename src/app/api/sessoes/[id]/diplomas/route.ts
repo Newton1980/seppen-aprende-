@@ -69,7 +69,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
-  return new NextResponse(zipBuffer, {
+  return new NextResponse(new Uint8Array(zipBuffer), {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="certificados-${sessao.codigo}.zip"`,

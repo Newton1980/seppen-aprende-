@@ -118,7 +118,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const buffer = await wb.xlsx.writeBuffer();
 
-  return new NextResponse(buffer as ArrayBuffer, {
+  return new NextResponse(new Uint8Array(buffer as ArrayBuffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="relatorio-${sessao.codigo}.xlsx"`,

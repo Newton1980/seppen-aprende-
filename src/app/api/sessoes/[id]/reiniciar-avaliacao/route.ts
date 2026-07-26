@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getPusher } from "@/lib/pusher-server";
+import { emitirEvento } from "@/lib/pusher-server";
 
 // POST — reinicia a avaliação final: limpa respostas, notas e volta a fase para "avaliacao"
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -48,8 +48,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   });
 
   // 5. Notificar alunos via Pusher
-  const pusher = getPusher();
-  await pusher.trigger(`sessao-${id}`, "fase-mudou", { fase: "avaliacao" });
+  await emitirEvento(id, "fase-mudou", { fase: "avaliacao" });
 
   return NextResponse.json({ ok: true, mensagem: "Avaliação reiniciada com sucesso" });
 }
